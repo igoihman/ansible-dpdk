@@ -39,7 +39,7 @@
       record: .
       col: other_config
       key: pmd-cpu-mask
-      value: 0x1
+      value: "0x1"
 
   - name: set dpdk-init
     openvswitch_db:
@@ -55,7 +55,7 @@
       record: .
       col: other_config
       key: dpdk-socket-mem
-      value: 1024
+      value: "1024"
 
   - name: set dpdk lcore mask
     openvswitch_db:
@@ -63,7 +63,7 @@
       record: .
       col: other_config
       key: dpdk-lcore-mask
-      value: 0x2
+      value: "0x2"
 
   - name: restart openvswitch service
     service:
