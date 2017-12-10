@@ -1,0 +1,71 @@
+- hosts: all
+  remote_user: root
+
+  tasks:
+  - name: install packages
+    yum:
+      name: "{{ item }}"
+      state: installed
+    with_items:
+      - dpdk
+      - dpdk-tools
+      - driverctl
+
+  - name: modprobe dpdk driver
+    modprobe:
+      name: uio_pci_generic
+
+  - name: bind nic to dpdk permanently
+    command: "driverctl -v set-override 0000:02:00.1 uio_pci_generic"
+
+  - name: stop irqbalance
+    service:
+      name: irqbalance
+      state: stopped
+      enabled: no
+
+  - name: add isolated cpus to grub file
+    lineinfile:
+      path: /etc/default/grub
+      regexp: "^GRUB_CMDLINE_LINUX_DEFAULT="
+      line: "GRUB_CMDLINE_LINUX_DEAFULT=iommu=pt intel_iommu=on isolcpus=3-7"
+
+  - name: update grub
+    command: "grub2-mkconfig -o /boot/grub2/grub.cfg"
+
+  - name: set pmd-cpu-mask
+    openvswitch_db:
+      table: open_vswitch
+      record: .
+      col: other_config
+      key: pmd-cpu-mask
+      value: 0x1
+
+  - name: set dpdk-init
+    openvswitch_db:
+      table: open_vswitch
+      record: .
+      col: other_config
+      key: dpdk-init
+      value: true
+
+  - name: set dpdk-socket-mem
+    openvswitch_db:
+      table: open_vswitch
+      record: .
+      col: other_config
+      key: dpdk-socket-mem
+      value: 1024
+
+  - name: set dpdk lcore mask
+    openvswitch_db:
+      table: open_vswitch
+      record: .
+      col: other_config
+      key: dpdk-lcore-mask
+      value: 0x2
+
+  - name: restart openvswitch service
+    service:
+      name: openvswitch
+      state: started
