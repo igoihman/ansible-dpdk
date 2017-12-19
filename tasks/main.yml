@@ -16,7 +16,7 @@
       name: uio_pci_generic
 
   - name: bind nic to dpdk permanently
-    command: "driverctl -v set-override 0000:02:00.1 uio_pci_generic"
+    command: "driverctl -v set-override {{ pci_addr }} {{ kernel_module }}"
 
   - name: stop irqbalance
     service:
@@ -39,7 +39,7 @@
       record: .
       col: other_config
       key: pmd-cpu-mask
-      value: "0x1"
+      value: "{{ pmd-cpu-mask }}"
 
   - name: set dpdk-init
     openvswitch_db:
@@ -55,7 +55,7 @@
       record: .
       col: other_config
       key: dpdk-socket-mem
-      value: "1024"
+      value: "{{ dpdk-socket-mem }}"
 
   - name: set dpdk lcore mask
     openvswitch_db:
@@ -63,7 +63,7 @@
       record: .
       col: other_config
       key: dpdk-lcore-mask
-      value: "0x2"
+      value: "{{ dpdk-lcore-mask}}"
 
   - name: restart openvswitch service
     service:
