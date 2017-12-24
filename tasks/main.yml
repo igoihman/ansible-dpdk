@@ -13,7 +13,7 @@
 
   - name: modprobe dpdk driver
     modprobe:
-      name: uio_pci_generic
+      name: "{{ kernel_module }}"
 
   - name: bind nic to dpdk permanently
     command: "driverctl -v set-override {{ pci_addr }} {{ kernel_module }}"
@@ -28,7 +28,7 @@
     lineinfile:
       path: /etc/default/grub
       regexp: "^GRUB_CMDLINE_LINUX_DEFAULT="
-      line: "GRUB_CMDLINE_LINUX_DEAFULT=iommu=pt intel_iommu=on isolcpus=3-7"
+      line: "GRUB_CMDLINE_LINUX_DEAFULT=iommu=pt intel_iommu=on isolcpus={{ cpu_list }}"
 
   - name: update grub
     command: "grub2-mkconfig -o /boot/grub2/grub.cfg"
