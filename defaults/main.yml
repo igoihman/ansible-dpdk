@@ -1,0 +1,4 @@
+interface: ""
+pci_addr: ""
+kernel_module: uio_pci_generic
+

@@ -1,6 +1,3 @@
-interface: ""
-pci_addr: "02:00.1"
-kernel_module: uio_pci_generic
 cpu_list: 1,2,3,4
 dpdk-lcore-mask: "0x1"
 pmd-cpu-mask: "0x2"
