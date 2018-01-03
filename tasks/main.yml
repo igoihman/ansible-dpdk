@@ -24,6 +24,11 @@
       state: stopped
       enabled: no
 
+  -name: disable selinux
+    selinux:
+      policy: targeted
+      state: permissive
+
   - name: add isolated cpus to grub file
     lineinfile:
       path: /etc/default/grub
