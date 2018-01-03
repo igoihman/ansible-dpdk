@@ -29,9 +29,12 @@
       path: /etc/default/grub
       regexp: "^GRUB_CMDLINE_LINUX_DEFAULT="
       line: "GRUB_CMDLINE_LINUX_DEAFULT=iommu=pt intel_iommu=on isolcpus={{ cpu_list }}"
+    register: grub
 
   - name: update grub
     command: "grub2-mkconfig -o /boot/grub2/grub.cfg"
+    when: grub.changed
+    register: update_grub
 
   - name: set pmd-cpu-mask
     openvswitch_db:
