@@ -19,22 +19,28 @@
   - name: bind nic to dpdk permanently
     command: "driverctl -v set-override {{ pci_addr }} {{ kernel_module }}"
 
-  - name: stop irqbalance
-    service:
-      name: irqbalance
-      state: stopped
-      enabled: no
+  - name: add isolated cpus to tuned
+    lineinfile:
+      path: /etc/tuned/cpu-partitioning-variables.conf
+      regexp: "^isolated_cores=.*"
+      line: "isolated_cores=isolcpus={{ cpu_list }}"
+    register: isolated_cores
 
-  - name: add isolated cpus to grub file
+  - name: select the cpu-partitioning tuned profile
+    command: tuned-adm profile cpu-partitioning
+    when: isolated_cores
+    register: grub_isolated_cores
+
+  - name: add iommu to grub
     lineinfile:
       path: /etc/default/grub
-      regexp: "^GRUB_CMDLINE_LINUX_DEFAULT="
-      line: "GRUB_CMDLINE_LINUX_DEAFULT=iommu=pt intel_iommu=on isolcpus={{ cpu_list }}"
-    register: grub
+      regexp: '^(GRUB_CMDLINE_LINUX=(?!.*iommu=pt intel_iommu=on)\"[^\"]+)(\".*)'
+      line: "\1 iommu=pt intel_iommu=on\2"
+      register: grub_iommu
 
   - name: update grub
     command: "grub2-mkconfig -o /boot/grub2/grub.cfg"
-    when: grub.changed
+    when: grub_isolated_cores.changed or grub_iommu.changed
     register: update_grub
 
   - name: set pmd-cpu-mask
