@@ -12,10 +12,6 @@
       - driverctl
       - tuned-profiles-cpu-partitioning
 
-  - name: modprobe dpdk driver
-    modprobe:
-      name: "{{ kernel_module }}"
-
   - name: bind nic to dpdk permanently
     command: "driverctl -v set-override {{ pci_addr }} {{ kernel_module }}"
 
