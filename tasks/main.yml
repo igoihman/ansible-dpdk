@@ -1,40 +1,50 @@
-- hosts: all
-  remote_user: root
+- fail: msg="no nic is defined"
+  when: nic == ""
 
-  tasks:
-  - name: install packages
-    yum:
-      name: "{{ item }}"
-      state: installed
-    with_items:
-      - dpdk
-      - dpdk-tools
-      - driverctl
-      - tuned-profiles-cpu-partitioning
+- name: install packages
+  yum:
+    name: "{{ item }}"
+    state: installed
+  with_items:
+  - dpdk
+  - dpdk-tools
+  - driverctl
+  - tuned-profiles-cpu-partitioning
 
-  - name: bind nic to dpdk permanently
-    command: "driverctl -v set-override {{ pci_addr }} {{ kernel_module }}"
+- name: get pci address
+  shell: "cat /sys/class/net/{{ nic }}/device/uevent | grep PCI_SLOT_NAME | cut -d= -f2"
+  register: pci_addr
 
-  - name: add isolated cpus to tuned
-    lineinfile:
-      path: /etc/tuned/cpu-partitioning-variables.conf
-      regexp: "^isolated_cores=.*"
-      line: "isolated_cores=isolcpus={{ cpu_list }}"
-    register: isolated_cores
+- name: get local cpu list
+  shell: "cat /sys/class/net/{{ nic }}/device/local_cpulist"
+  register: cpu_list
 
-  - name: select the cpu-partitioning tuned profile
-    command: tuned-adm profile cpu-partitioning
-    when: isolated_cores
-    register: grub_isolated_cores
+- name: add isolated cpus to tuned
+  lineinfile:
+    path: /etc/tuned/cpu-partitioning-variables.conf
+    regexp: "^isolated_cores=.*"
+    line: "isolated_cores={{ cpu_list.stdout }}"
+  register: isolated_cores
 
-  - name: add iommu to grub
-    lineinfile:
-      path: /etc/default/grub
-      regexp: '^(GRUB_CMDLINE_LINUX=(?!.*iommu=pt intel_iommu=on)\"[^\"]+)(\".*)'
-      line: "\1 iommu=pt intel_iommu=on\2"
-      register: grub_iommu
+- name: select the cpu-partitioning tuned profile
+  command: tuned-adm profile cpu-partitioning
+  when: isolated_cores.changed
+  register: grub_isolated_cores
 
-  - name: update grub
-    command: "grub2-mkconfig -o /boot/grub2/grub.cfg"
-    when: grub_isolated_cores.changed or grub_iommu.changed
-    register: update_grub
+- name: add iommu to grub
+  lineinfile:
+    state: present
+    path: /etc/default/grub
+    regexp: '^(GRUB_CMDLINE_LINUX=(?!.*iommu=pt intel_iommu=on)\"[^\"]+)(\".*)'
+    line: '\1 iommu=pt intel_iommu=on\2'
+    backrefs: yes
+  register: grub_iommu
+
+- name: update grub
+  shell: "grub2-mkconfig -o /boot/grub2/grub.cfg"
+  when: grub_isolated_cores.changed or grub_iommu.changed
+  register: update_grub
+
+- name: bind nic to dpdk permanently
+  command: "driverctl -v set-override {{ pci_addr.stdout }} {{ kernel_module }}"
+

@@ -1,2 +1,3 @@
-cpu_list: 1,2,3,4
+nic: ""
+kernel_module: vfio-pci
 
