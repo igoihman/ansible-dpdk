@@ -1,5 +1,5 @@
 - fail: msg="no nic is defined"
-  when: nic == ""
+  when: "nics | length == 0"
 
 - name: install packages
   yum:
@@ -11,19 +11,15 @@
   - driverctl
   - tuned-profiles-cpu-partitioning
 
-- name: get pci address
-  shell: "cat /sys/class/net/{{ nic }}/device/uevent | grep PCI_SLOT_NAME | cut -d= -f2"
-  register: pci_addr
+- set_fact: "pci_addresses={{ nics | get_pci_addresses}}"
 
-- name: get local cpu list
-  shell: "cat /sys/class/net/{{ nic }}/device/local_cpulist"
-  register: cpu_list
+- set_fact: "cpu_list={{ nics | get_cpu_list}}"
 
 - name: add isolated cpus to tuned
   lineinfile:
     path: /etc/tuned/cpu-partitioning-variables.conf
     regexp: "^isolated_cores=.*"
-    line: "isolated_cores={{ cpu_list.stdout }}"
+    line: "isolated_cores={{ cpu_list }}"
   register: isolated_cores
 
 - name: select the cpu-partitioning tuned profile
@@ -46,5 +42,6 @@
   register: update_grub
 
 - name: bind nic to dpdk permanently
-  command: "driverctl -v set-override {{ pci_addr.stdout }} {{ kernel_module }}"
+  command: "driverctl -v set-override {{ item }} {{ kernel_module }}"
+  with_items: "{{ pci_addresses }}"
 
