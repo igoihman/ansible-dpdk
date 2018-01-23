@@ -7,7 +7,7 @@ class FilterModule(object):
         return {
             'get_pci_addresses': self.get_pci_addresses,
             'get_cpu_list': self.get_cpu_list,
-            'get_nics_on_nume': self.get_nics_on_numa
+            'get_nics_per_numa': self.get_nics_per_numa
         }
 
     def _get_pci_address(self, nic):
@@ -62,13 +62,13 @@ class FilterModule(object):
             pci_addresses.append(self._get_pci_address(nic))
         return pci_addresses
 
-    def get_nics_on_numa(self, nics):
-        nics_on_numa = {}
+    def get_nics_per_numa(self, nics):
+        nics_per_numa = {}
         for nic in nics:
             numa_node = self._get_numa_node(nic)
-            if numa_node in nics_on_numa:
-                nics_on_numa[numa_node] += 1
+            if numa_node in nics_per_numa:
+                nics_per_numa[int(numa_node)] += 1
             else:
-                nics_on_numa[numa_node] = 1
+                nics_per_numa[int(numa_node)] = 1
 
-        return nics_on_numa
+        return nics_per_numa

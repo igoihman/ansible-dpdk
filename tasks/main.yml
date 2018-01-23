@@ -15,6 +15,12 @@
 
 - set_fact: "cpu_list={{ nics | get_cpu_list}}"
 
+- set_fact: "nics_per_numa={{ nics | get_nics_per_numa}}"
+
+- name: print nics per numa
+  debug:
+    msg: "nics_per_numa={{ nics | get_nics_per_numa}}"
+
 - name: add isolated cpus to tuned
   lineinfile:
     path: /etc/tuned/cpu-partitioning-variables.conf
